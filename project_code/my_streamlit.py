@@ -1,6 +1,7 @@
 from gemini_chat import GeminiChat
 import streamlit as st
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage  # Message types for chat
+from tools import save_uploaded_files
 # async keyword defines an asynchronous function that can be paused and resumed,
 # allowing other code to run while waiting for I/O operations like network requests.
 # This enables non-blocking concurrent execution of tasks. Similar to multithreading.
@@ -8,14 +9,31 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage  # Mess
 async def streamlit_interface():
     st.title("Gemini Chat")
     st.write("Ask anything about the documents in the vector database")
-    st.sidebar.title("Model Settings")
-    temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, step=0.1)
+    with st.sidebar:
+        uploaded_files = st.file_uploader("Upload a document",
+                                           type=["txt", "pdf", "docx"],
+                                           accept_multiple_files=True)
+        
+    if uploaded_files:
+        st.write(f"Uploaded {len(uploaded_files)} file(s):")
+        st.write(save_uploaded_files(uploaded_files))
+        # for uploaded_file in uploaded_files:
+        #     st.write(f"- {uploaded_file.name}")
+            # if uploaded_file.type == "text/plain":
+            #     # Read and display text file content
+            #     content = uploaded_file.read().decode("utf-8")
+            #     st.text_area(f"Content of {uploaded_file.name}", content, height=300)
+            # elif uploaded_file.type == "application/pdf":
+            #     st.write(f"PDF processing for {uploaded_file.name} is not implemented yet.")
+            # elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            #     st.write(f"DOCX processing for {uploaded_file.name} is not implemented yet.")
+        
 
     # Initialize LLM instance if not already in session state
     # This ensures the chat model persists across page refreshes
     # Also ensures that the LLM instance is created only once
     if "llm" not in st.session_state: # session state is a dictionary that stores the state of the application and does not get reset on page refresh
-        st.session_state.llm = GeminiChat(temperature=temperature)
+        st.session_state.llm = GeminiChat()
         
     # Initialize message history in session state if not already present
     # This stores the chat history between user and AI across page refreshes
