@@ -6,11 +6,17 @@ from langchain_community.document_loaders import PyPDFLoader  # Loads and parses
 from get_key import get_api_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
+import requests
+from bs4 import BeautifulSoup
+from langchain.tools import tool
+from difflib import SequenceMatcher
+
 
 # TODO: fix the caching of documents for uploaded where only the newly uploaded files are scanned
 # TODO: check if we want to merge the 2 vector dbs where we only allow the search of files uploaded to the bot
 
 _cached_documents = []
+
 
 # Tool definition for searching vector database
 @tool
@@ -61,6 +67,9 @@ def search_vector_db(query: str) -> str:
     
     return result_str
 
+
+
+
 @tool
 def search_vector_uploaded(query: str) -> str:
     """
@@ -76,16 +85,14 @@ def search_vector_uploaded(query: str) -> str:
 
     # Initialize embedding model
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=get_api_key())
-    
-    # Initialize/connect to vector database
+
     vector_store = Chroma(
         collection_name = "embeddings",
         embedding_function = embeddings,
         persist_directory = "./vector_added",
         collection_metadata = {"hnsw:space": "cosine"}  # Use cosine similarity
-    )
-
-        
+    ) 
+      
     directory_path = os.path.join(os.path.dirname(__file__), '../', 'added')
     # Loop through all PDF files in the directory
     for filename in os.listdir(directory_path):
@@ -186,3 +193,139 @@ def add_two_numbers(a: int, b: int) -> str:
     """
     # Convert result to string since LLM expects string output
     return str(a + b)
+
+@tool
+def scrape_latest_url(url: str) -> str:
+    """
+    Finds the latest uploaded URL, and webscrapes/scrapes/summarizes its content and displays the info. 
+
+    Args:
+        url (str): The url of the website that is needed to scrape.
+
+    Returns:
+        str: Scraped content from the latest URL given, and do not let the content displayed or asked for more that 500 words.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+    }
+    try:
+        # Validate the URL
+        if not url.startswith("http://") and not url.startswith("https://"):
+            return "Invalid URL. Please provide a valid URL starting with http:// or https://."
+
+        # Send GET request to the URL
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return f"Failed to fetch the URL. HTTP status code: {response.status_code}."
+
+        # Parse the webpage content with BeautifulSoup
+        soup = BeautifulSoup(response.content, "html.parser")
+        # Initialize content string to store the scraped data
+        content = ""
+        
+        # Handle all h2 tags and paragraphs/divs after them
+        h2_tags = soup.find_all('h2')
+
+        for h2 in h2_tags:
+            content += f"**{h2.text.strip()}**\n\n"
+            
+            # Find all elements following this h2 and stop at the next h2
+            next_elements = h2.find_all_next()
+
+            for element in next_elements:
+                if element.name == 'h2':  # Stop once we reach the next h2 tag
+                    break
+                if element.name in ['p']:  # Check for both p and div tags
+                    # Only add the content of the element if it's not empty
+                    if element.text.strip(): 
+                        content += f"{element.text.strip()}\n\n"
+            
+            content += "-" * 40 + "\n\n"
+        
+        return content
+
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred while fetching the URL: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
+
+
+
+# @tool
+# def compare_url_with_document(url: str, document: str) -> str:
+#     """
+#     Compare the content of a URL, by webscraping and summarizing the content, with the content of the uploaded document and correct discrepancies in the document, and say the incorrect info if present.
+    
+#     Args:
+#         url (str): The URL to scrape for reference content.
+#         document (str): The search query string to find relevant documents
+ 
+#     Returns:
+#         str: Corrected content for the document.
+#     """
+
+#     try:
+#         # Initialize variables and load embedding model
+#         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=get_api_key())
+#         vector_store = Chroma(
+#             collection_name="embeddings",
+#             embedding_function=embeddings,
+#             persist_directory="./vector_added",
+#             collection_metadata={"hnsw:space": "cosine"}
+#         )
+        
+#         added_documents = []
+#         directory_path = os.path.join(os.path.dirname(__file__), '../', 'added')
+#         # Load and parse documents
+#         for filename in os.listdir(directory_path):
+#             file_path = os.path.join(directory_path, filename)
+#             if filename.endswith('.pdf'):
+#                 documents = PyPDFLoader(file_path).load()
+#             elif filename.endswith('.docx'):
+#                 docx_file = DocxDocument(file_path)
+#                 documents = [
+#                     Document(page_content=para.text, metadata={"source": file_path})
+#                     for para in docx_file.paragraphs if para.text.strip()
+#                 ]
+#             elif filename.endswith('.txt'):
+#                 with open(file_path, 'r', encoding='utf-8') as file:
+#                     content = file.read()
+#                 documents = [Document(page_content=content, metadata={"source": file_path})]
+#             else:
+#                 continue
+#             added_documents.extend(documents)
+#         vector_store.add_documents(added_documents)
+
+#         # Validate and fetch URL content
+#         if not url.startswith("http://") and not url.startswith("https://"):
+#             return "Invalid URL. Please provide a valid URL starting with http:// or https://."
+#         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+#         if response.status_code != 200:
+#             return f"Failed to fetch the URL. HTTP status code: {response.status_code}."
+#         soup = BeautifulSoup(response.content, "html.parser")
+        
+#         # Extract content from webpage
+#         content = ""
+#         for h2 in soup.find_all('h2'):
+#             content += f"**{h2.text.strip()}**\n\n"
+#             for elem in h2.find_all_next(['p'], limit=10):  # Limit to 10 elements for simplicity
+#                 if elem.name == 'h2':
+#                     break
+#                 content += f"{elem.text.strip()}\n\n"
+
+#         # Correct discrepancies
+#         corrected_document = []
+#         for doc in added_documents:
+#             text = doc.page_content
+#             similarity_scores = [SequenceMatcher(None, text, section).ratio() for section in content.split('\n\n')]
+#             max_similarity = max(similarity_scores, default=0)
+#             if max_similarity > 0.85:
+#                 corrected_document.append(text)
+#             else:
+#                 best_match = content.split('\n\n')[similarity_scores.index(max_similarity)] if similarity_scores else ""
+#                 corrected_document.append(f"[UPDATED] {best_match}")
+
+#         return "\n".join(corrected_document)
+
+#     except Exception as e:
+#         return f"An error occurred: {e}"

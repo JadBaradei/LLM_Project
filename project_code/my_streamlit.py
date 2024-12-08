@@ -1,10 +1,49 @@
+import os
+from pathlib import Path
+from datetime import datetime
+from hashlib import md5
 from gemini_chat import GeminiChat
 import streamlit as st
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage  # Message types for chat
+from langchain_core.messages import HumanMessage, AIMessage
 from tools import save_uploaded_files
+import re
+from urllib.parse import urlparse
 # async keyword defines an asynchronous function that can be paused and resumed,
 # allowing other code to run while waiting for I/O operations like network requests.
 # This enables non-blocking concurrent execution of tasks. Similar to multithreading.
+
+
+# Directory to store the URLs
+URL_DIRECTORY = Path("C:/Users/User/Documents/George/lau/Fall 2024/LLM/Project/LLM_Project/LLM_Project/urls")
+
+
+# Function to save the URL to a text file
+def save_url_to_file(url):
+    # Parse the URL to extract the domain and path for naming
+    parsed_url = urlparse(url)
+    # Use the netloc (domain) and path as part of the filename
+    url_path = parsed_url.path.strip("/").replace("/", "_") or "root"
+    domain = parsed_url.netloc.replace("www.", "")
+    filename = f"{domain}_{url_path}.txt"
+    
+    # Ensure the directory exists
+    URL_DIRECTORY.mkdir(parents=True, exist_ok=True)
+
+    # Create the file path
+    file_path = URL_DIRECTORY / filename
+    
+    # If the file already exists, remove it
+    if file_path.exists():
+        file_path.unlink()  # Delete the old file
+
+    # Write the URL to the file
+    with file_path.open("w", encoding="utf-8") as file:
+        file.write(url)
+    
+    return file_path
+
+
+
 
 async def streamlit_interface():
     st.title("Gemini Chat")
@@ -12,8 +51,8 @@ async def streamlit_interface():
     with st.sidebar:
         uploaded_files = st.file_uploader("Upload a document",
                                            type=["txt", "pdf", "docx"],
-                                           accept_multiple_files=True)
-        
+                                           accept_multiple_files=True)  
+
     if uploaded_files:
         st.write(f"Uploaded {len(uploaded_files)} file(s):")
         st.write(save_uploaded_files(uploaded_files))
@@ -120,3 +159,14 @@ async def streamlit_interface():
                 # Display user's message
                 with st.chat_message("user"):
                     st.markdown(message.content)
+
+def is_valid_url(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'  # ...or ipv4
+        r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'  # ...or ipv6
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None

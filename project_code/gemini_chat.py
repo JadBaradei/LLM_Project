@@ -3,7 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI # Google's LLM
 from langchain_core.messages import HumanMessage  # Message types for chat
 from langgraph.prebuilt import create_react_agent  # For creating an agent that can use tools
 from get_key import get_api_key
-from tools import add_two_numbers, search_vector_db, search_vector_uploaded
+from tools import  search_vector_db, search_vector_uploaded, scrape_latest_url , add_two_numbers#, compare_url_with_document
 
 class GeminiChat:
     def __init__(self, model_name: str = "gemini-pro", temperature: float = 0.0):
@@ -26,7 +26,7 @@ class GeminiChat:
         )
         
         # Create agent with both tools available
-        self.agent = create_react_agent(self.llm, tools=[add_two_numbers, search_vector_db, search_vector_uploaded])
+        self.agent = create_react_agent(self.llm, tools=[ search_vector_db, search_vector_uploaded,scrape_latest_url, add_two_numbers])
         
         # Initialize conversation history
         self.messages = []
