@@ -7,10 +7,15 @@ from get_key import get_api_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
 from serpapi import GoogleSearch
+import re
+import pandas as pd
 
+plot_type = None
+plotted_figure = None
 
 # This function works as a search vector depending on what the user uploads. It has a cache mechanism as well where it will only scan the newly uploaded files 
 # not all files everytime.
+@tool
 def search_vector_db(query: str) -> str:
     """
     Search the vector database for documents similar to the query.
@@ -101,6 +106,41 @@ def search_vector_db(query: str) -> str:
     return result_str
 
 @tool
+def plot_excel_sheet(query: str) -> str:
+    """
+    Draws a plot given the name of an uploaded excel sheet and displays it to the user.
+
+    Args:
+        query (str): The name of the excel sheet to plot.
+    Returns:
+        str: A confirmation message of whether the plot was successfull or not.
+    """
+    excel_path = search_db_by_name(query)
+    print("Searched db for: ", excel_path)
+
+    try:
+        df = pd.read_excel(excel_path)
+    except:
+        return "Invalid excel file"
+
+    try:
+        if plot_type == "bar":
+            ax = df.plot.bar()
+        elif plot_type == "line":
+            ax = df.plot.line()
+        elif plot_type == "scatter":
+            ax = df.plot.scatter(x=df.columns[0], y=df.columns[1])
+        else:
+            raise ValueError("Invalid plot type specified.")
+    except:
+        return "Could not draw plot"
+    
+    global plotted_figure
+    plotted_figure = ax.get_figure()
+    return f"Successfully drew plot of type {plot_type} as you selected"
+
+
+@tool
 def search_google_scholar(query: str) -> str:
     """
     Searches Google Scholar for research papers related to the user's query, formats the results and provides a brief summary of each paper found.
@@ -189,3 +229,33 @@ def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365
     if not parsed_results:
         return "Error: the api key must have been depleted, or no search results were found"
     return parsed_results
+
+def search_db_by_name(name):
+
+    directory_path = os.path.join(os.path.dirname(__file__), '../', 'db')
+
+    for filename in os.listdir(directory_path):
+        if contains_same_characters(filename, name):
+            if not filename.endswith(".xlsx"):
+                return None
+            else:
+                return os.path.join(directory_path, filename)
+
+def contains_same_characters(str1, str2):
+    # Remove any non-alphanumeric characters from str1
+    cleaned_str1 = re.sub(r'[^a-zA-Z0-9]', '', str1)
+    # Convert both strings to lowercase for case-insensitive comparison 
+    cleaned_str1 = cleaned_str1.lower()
+    cleaned_str2 = str2.lower()
+
+    print(cleaned_str2 in cleaned_str1)
+    # Check if the cleaned str2 exists within cleaned str1
+    return cleaned_str2 in cleaned_str1
+
+def set_plot_type(plt_type):
+    global plot_type
+    plot_type = plt_type
+
+def get_plotted_figure():
+    global plotted_figure
+    return plotted_figure
