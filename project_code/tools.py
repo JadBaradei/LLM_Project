@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from langchain.tools import tool
 from difflib import SequenceMatcher
 
-
 # TODO: fix the caching of documents for uploaded where only the newly uploaded files are scanned
 # TODO: check if we want to merge the 2 vector dbs where we only allow the search of files uploaded to the bot
 
@@ -248,6 +247,7 @@ def scrape_latest_url(url: str) -> str:
         return f"An error occurred while fetching the URL: {e}"
     except Exception as e:
         return f"An unexpected error occurred: {e}"
+
 
 
 
