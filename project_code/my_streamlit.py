@@ -1,34 +1,23 @@
 from gemini_chat import GeminiChat
 import streamlit as st
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage  # Message types for chat
-from tools import save_uploaded_files
+from langchain_core.messages import HumanMessage, AIMessage  # Message types for chat
+from tools import save_uploaded_files, set_plot_type, get_plotted_figure
+
 # async keyword defines an asynchronous function that can be paused and resumed,
 # allowing other code to run while waiting for I/O operations like network requests.
 # This enables non-blocking concurrent execution of tasks. Similar to multithreading.
-
 async def streamlit_interface():
-    st.title("Gemini Chat")
-    st.write("Ask anything about the documents in the vector database")
+    st.title("LLM Project Chat")
     with st.sidebar:
         uploaded_files = st.file_uploader("Upload a document",
-                                           type=["txt", "pdf", "docx"],
+                                           type=["txt", "pdf", "docx", "xlsx"],
                                            accept_multiple_files=True)
-        
+        set_plot_type(st.selectbox("Select plot type", ["bar", "line", "scatter"]))
+    
     if uploaded_files:
         st.write(f"Uploaded {len(uploaded_files)} file(s):")
         st.write(save_uploaded_files(uploaded_files))
-        # for uploaded_file in uploaded_files:
-        #     st.write(f"- {uploaded_file.name}")
-            # if uploaded_file.type == "text/plain":
-            #     # Read and display text file content
-            #     content = uploaded_file.read().decode("utf-8")
-            #     st.text_area(f"Content of {uploaded_file.name}", content, height=300)
-            # elif uploaded_file.type == "application/pdf":
-            #     st.write(f"PDF processing for {uploaded_file.name} is not implemented yet.")
-            # elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            #     st.write(f"DOCX processing for {uploaded_file.name} is not implemented yet.")
         
-
     # Initialize LLM instance if not already in session state
     # This ensures the chat model persists across page refreshes
     # Also ensures that the LLM instance is created only once
@@ -45,27 +34,16 @@ async def streamlit_interface():
         # Create chat message UI element with appropriate type (user/assistant) and display content
 
         # Handle AI message with content (regular response)
-        if isinstance(message, AIMessage) and message.content:
-            with st.chat_message("assistant"):
-                st.markdown(message.content)
-
-        # Handle AI message without content (tool call)
-
-        # elif isinstance(message, AIMessage) and not message.content:
-        #     with st.chat_message("assistant"):
-        #         # Extract tool name and arguments from the tool call
-        #         tool_name = message.tool_calls[0]['name']
-        #         tool_args = str(message.tool_calls[0]['args'])
-        #         # Display tool call details with status indicator
-        #         with st.status(f"Tool call: {tool_name}"):
-        #             st.markdown(tool_args)
-        
-        # Handle tool execution result message
-        # elif isinstance(message, ToolMessage):
-        #     with st.chat_message("assistant"):
-        #         # Display tool execution result with status indicator
-        #         with st.status("Tool result: "):
-        #             st.markdown(message.content)
+        if isinstance(message, AIMessage):
+                if message.content:
+                    # Display AI's regular response message
+                    with st.chat_message("assistant"):
+                        st.markdown(message.content)
+                else:
+                    # Handle the tool call for plotting
+                    tool_name = message.tool_calls[0]['name']
+                    if tool_name == "plot_excel_sheet":
+                        st.pyplot(get_plotted_figure())
 
         # Handle user message
         elif isinstance(message, HumanMessage):
@@ -95,26 +73,16 @@ async def streamlit_interface():
             # Check if message is from AI (not a tool call) and has content
             # When it is a tool call, AIMessage object is created but it has no content
             # isinstance(message, AIMessage) will skip tool outputs
-            if isinstance(message, AIMessage) and message.content:
-                # Display AI's regular response message
-                with st.chat_message("assistant"):
-                    st.markdown(message.content)
-
-            # elif isinstance(message, AIMessage) and not message.content:
-            #     # Handle AI message that contains a tool call
-            #     with st.chat_message("assistant"):
-            #         # Extract tool name and arguments from the tool call
-            #         tool_name = message.tool_calls[0]['name']
-            #         tool_args = str(message.tool_calls[0]['args'])
-            #         # Display tool call details with status indicator
-            #         with st.status(f"Tool call: {tool_name}"):
-            #             st.markdown(tool_args)
-
-            # elif isinstance(message, ToolMessage):
-            #     # Display the result returned from tool execution
-            #     with st.chat_message("assistant"):
-            #         with st.status("Tool result: "):
-            #             st.markdown(message.content)
+            if isinstance(message, AIMessage):
+                if message.content:
+                    # Display AI's regular response message
+                    with st.chat_message("assistant"):
+                        st.markdown(message.content)
+                else:
+                    # Handle the tool call for plotting
+                    tool_name = message.tool_calls[0]['name']
+                    if tool_name == "plot_excel_sheet":
+                        st.pyplot(get_plotted_figure())
 
             elif isinstance(message, HumanMessage):
                 # Display user's message
