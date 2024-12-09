@@ -7,64 +7,12 @@ from get_key import get_api_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
 
-# TODO: fix the caching of documents for uploaded where only the newly uploaded files are scanned
-# TODO: check if we want to merge the 2 vector dbs where we only allow the search of files uploaded to the bot
 
-_cached_documents = []
-
-# Tool definition for searching vector database
-@tool
+# This function works as a search vector depending on what the user uploads. It has a cache mechanism as well where it will only scan the newly uploaded files 
+# not all files everytime.
 def search_vector_db(query: str) -> str:
     """
     Search the vector database for documents similar to the query.
-    Args:
-        query (str): The search query string to find relevant documents
-    Returns:
-        str: A concatenated string of the top 5 most similar document contents found in the vector database
-    """
-    
-    # Initialize embedding model
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=get_api_key())
-    
-    # Initialize/connect to vector database
-    vector_store = Chroma(
-        collection_name = "embeddings",
-        embedding_function = embeddings,
-        persist_directory = "./vector_db",
-        collection_metadata = {"hnsw:space": "cosine"}  # Use cosine similarity
-    )
-
-    if not _cached_documents:
-        directory_path = os.path.join(os.path.dirname(__file__), '../', 'db')
-        # Loop through all PDF files in the directory
-        for filename in os.listdir(directory_path):
-        # Check if the file is a PDF
-            if filename.endswith('.pdf'):
-                # Create full file path by joining directory and filename
-                file_path = os.path.join(directory_path, filename)
-                # Create a PDF loader for the current file
-                loader = PyPDFLoader(file_path)
-                # Load and parse the PDF into documents
-                documents = loader.load()
-                _cached_documents.extend(documents)
-
-        # Add the cached documents to the vector store with their embeddings
-        vector_store.add_documents(_cached_documents)
-    
-    # Debug print
-    print("Searching the vector database for: ", query)
-    
-    # Perform similarity search and get top 5 results
-    result = vector_store.similarity_search(query = query, k = 5)
-    # Combine all document contents into single string
-    result_str = "\n".join([doc.page_content for doc in result])
-    
-    return result_str
-
-@tool
-def search_vector_uploaded(query: str) -> str:
-    """
-    Search the uploaded files vector database for documents similar to the query.
     Args:
         query (str): The search query string to find relevant documents
     Returns:
@@ -81,73 +29,88 @@ def search_vector_uploaded(query: str) -> str:
     vector_store = Chroma(
         collection_name = "embeddings",
         embedding_function = embeddings,
-        persist_directory = "./vector_added",
+        persist_directory = "./vector_db",
         collection_metadata = {"hnsw:space": "cosine"}  # Use cosine similarity
     )
 
-        
-    directory_path = os.path.join(os.path.dirname(__file__), '../', 'added')
-    # Loop through all PDF files in the directory
+    directory_path = os.path.join(os.path.dirname(__file__), '../', 'db')
+    directory_details_path = os.path.join(directory_path, 'db_details')
+
+    # Load last scan timestamps from a file
+    last_scan_file = os.path.join(directory_details_path, 'last_scan.txt')
+    if os.path.exists(last_scan_file):
+        with open(last_scan_file, 'r') as f:
+            last_scan_times = eval(f.read())  # Read and parse stored times
+    else:
+        last_scan_times = {}
+
+    current_scan_times = {}
+
+    # Loop through all files in the directory
     for filename in os.listdir(directory_path):
-    # Check if the file is a PDF
-        if filename.endswith('.pdf'):
-            # Create full file path by joining directory and filename
-            file_path = os.path.join(directory_path, filename)
-            # Create a PDF loader for the current file
-            loader = PyPDFLoader(file_path)
-            # Load and parse the PDF into documents
-            documents = loader.load()
-            added_documents.extend(documents)
+        file_path = os.path.join(directory_path, filename)
+        if os.path.isfile(file_path):
+            mod_time = os.path.getmtime(file_path)
+            current_scan_times[filename] = mod_time
             
-        # Check if the file is a Word document
-        elif filename.endswith('.docx'):
-            file_path = os.path.join(directory_path, filename)
-            docx_file = DocxDocument(file_path)
-            print(docx_file.paragraphs)
-            # Extract text and create Document objects for each paragraph
-            documents = [
-                Document(
-                    page_content=para.text,
-                    metadata={"source": file_path}
-                )
-                for para in docx_file.paragraphs if para.text.strip()  # Ignore empty paragraphs
-            ]
-            added_documents.extend(documents)
+            # Check if the file was added/modified after the last scan
+            if filename not in last_scan_times or last_scan_times[filename] < mod_time:
+                #Debug print
+                print(f"I am scanning the file: {filename}")
+                if filename.endswith('.pdf'):
+                    loader = PyPDFLoader(file_path)
+                    documents = loader.load()
+                    added_documents.extend(documents)
+                elif filename.endswith('.docx'):
+                    docx_file = DocxDocument(file_path)
+                    documents = [
+                        Document(
+                            page_content=para.text,
+                            metadata={"source": file_path}
+                        )
+                        for para in docx_file.paragraphs if para.text.strip()
+                    ]
+                    added_documents.extend(documents)
+                elif filename.endswith('.txt'):
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        content = file.read()
+                    documents = [
+                        Document(
+                            page_content=content,
+                            metadata={"source": file_path}
+                        )
+                    ]
+                    added_documents.extend(documents)
 
-        # Check if the file is a plain text file
-        elif filename.endswith('.txt'):
-            file_path = os.path.join(directory_path, filename)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            # Create a single Document object for the entire file content
-            documents = [
-                Document(
-                    page_content=content,
-                    metadata={"source": file_path}
-                )
-            ]
-            added_documents.extend(documents)
+    # Update last scan times
+    with open(last_scan_file, 'w') as f:
+        f.write(str(current_scan_times))
 
-        # Add the cached documents to the vector store with their embeddings
+    # Add the cached documents to the vector store with their embeddings
+    if(len(added_documents) > 0):
         vector_store.add_documents(added_documents)
-    
+
     # Debug print
-    print("Searching the ADDED vector database for: ", query)
+    print("Searching the vector database for: ", query)
     
     # Perform similarity search and get top 5 results
-    result = vector_store.similarity_search(query = query, k = 5)
-    # Combine all document contents into single string
+    result = vector_store.similarity_search(query=query, k=5)
     result_str = "\n".join([doc.page_content for doc in result])
     
     return result_str
 
-# The role of this function is to save the added files in the 'added' folder
+
+# The role of this function is to save the added files in the 'added' folder1
 def save_uploaded_files(uploaded_files) -> str:
     
-    directory_path = os.path.join(os.path.dirname(__file__), '../', 'added')
+    # The db folder
+    directory_path = os.path.join(os.path.dirname(__file__), '../', 'db')
+    # The caching folder
+    db_details_path = os.path.join(directory_path, 'db_details')
     # Check if the folder exists, create it if not
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
+        os.makedirs(db_details_path)
 
     saved_files = []  # List to store paths of saved files
 
