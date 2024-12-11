@@ -6,7 +6,7 @@ from langchain_community.document_loaders import PyPDFLoader  # Loads and parses
 from get_key import get_api_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
-#from serpapi import GoogleSearch
+from serpapi import GoogleSearch
 import re
 import pandas as pd
 import selenium.webdriver as webdriver
@@ -151,39 +151,39 @@ def plot_excel_sheet(query: str) -> str:
     return f"Successfully drew plot of type {plot_type} as you selected"
 
 
-# @tool
-# def search_google_scholar(query: str) -> str:
-#     """
-#     Searches Google Scholar for research papers related to the user's query, formats the results and provides a brief summary of each paper found.
+@tool
+def search_google_scholar(query: str) -> str:
+    """
+    Searches Google Scholar for research papers related to the user's query, formats the results and provides a brief summary of each paper found.
     
-#     Args:
-#         query (str): The search query string provided by the user.
+    Args:
+        query (str): The search query string provided by the user.
     
-#     Returns:
-#         str: A formatted string containing research paper titles, snippets, and links.
-#     """
-#     # Debug print
-#     print("Searching google scholar for: ", query)
+    Returns:
+        str: A formatted string containing research paper titles, snippets, and links.
+    """
+    # Debug print
+    print("Searching google scholar for: ", query)
 
-#     parsed_results = google_scholar_query(query)
+    parsed_results = google_scholar_query(query)
 
-#     if not parsed_results:
-#         return "No research results were found for your query."
+    if not parsed_results:
+        return "No research results were found for your query."
 
-#     # Format the results
-#     formatted_results = []
-#     for idx, item in enumerate(parsed_results, start=1):
-#         title = item.get("title", "No title available")
-#         snippet = item.get("snippet", "No snippet available")
-#         link = item.get("link", "No link available")
-#         formatted_results.append(
-#             f"Result {idx}:\n"
-#             f"Title: {title}\n"
-#             f"Briefing: {snippet}\n"
-#             f"Link: {link}\n"
-#         )
+    # Format the results
+    formatted_results = []
+    for idx, item in enumerate(parsed_results, start=1):
+        title = item.get("title", "No title available")
+        snippet = item.get("snippet", "No snippet available")
+        link = item.get("link", "No link available")
+        formatted_results.append(
+            f"Result {idx}:\n"
+            f"Title: {title}\n"
+            f"Briefing: {snippet}\n"
+            f"Link: {link}\n"
+        )
 
-#     return "\n".join(formatted_results)
+    return "\n".join(formatted_results)
 
 # The role of this function is to save the added files in the 'added' folder1
 def save_uploaded_files(uploaded_files) -> str:
@@ -220,26 +220,26 @@ def save_uploaded_files(uploaded_files) -> str:
 
     return "\n".join(saved_files)
 
-# def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365ef04b3e476a56d7bd5da888c"):
-#     params = {
-#     "engine": "google_scholar",
-#     "q": query,
-#     "api_key": api_key
-#     }
-#     search = GoogleSearch(params)
-#     results = search.get_dict()
-#     organic_results = results.get("organic_results", [])
-#     parsed_results = [
-#         {
-#             "title": item.get("title", "No title available"),
-#             "link": item.get("link", "No link available"),
-#             "snippet": item.get("snippet", "No snippet available")
-#         }
-#         for item in organic_results
-#     ]
-#     if not parsed_results:
-#         return "Error: the api key must have been depleted, or no search results were found"
-#     return parsed_results
+def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365ef04b3e476a56d7bd5da888c"):
+    params = {
+    "engine": "google_scholar",
+    "q": query,
+    "api_key": api_key
+    }
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    organic_results = results.get("organic_results", [])
+    parsed_results = [
+        {
+            "title": item.get("title", "No title available"),
+            "link": item.get("link", "No link available"),
+            "snippet": item.get("snippet", "No snippet available")
+        }
+        for item in organic_results
+    ]
+    if not parsed_results:
+        return "Error: the api key must have been depleted, or no search results were found"
+    return parsed_results
 
 def search_db_by_name(name):
 
