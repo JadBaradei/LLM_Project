@@ -6,9 +6,20 @@ from langchain_community.document_loaders import PyPDFLoader  # Loads and parses
 from get_key import get_api_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
-from serpapi import GoogleSearch
+#from serpapi import GoogleSearch
 import re
 import pandas as pd
+import selenium.webdriver as webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import re
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup
+import unicodedata
 
 plot_type = None
 plotted_figure = None
@@ -140,39 +151,39 @@ def plot_excel_sheet(query: str) -> str:
     return f"Successfully drew plot of type {plot_type} as you selected"
 
 
-@tool
-def search_google_scholar(query: str) -> str:
-    """
-    Searches Google Scholar for research papers related to the user's query, formats the results and provides a brief summary of each paper found.
+# @tool
+# def search_google_scholar(query: str) -> str:
+#     """
+#     Searches Google Scholar for research papers related to the user's query, formats the results and provides a brief summary of each paper found.
     
-    Args:
-        query (str): The search query string provided by the user.
+#     Args:
+#         query (str): The search query string provided by the user.
     
-    Returns:
-        str: A formatted string containing research paper titles, snippets, and links.
-    """
-    # Debug print
-    print("Searching google scholar for: ", query)
+#     Returns:
+#         str: A formatted string containing research paper titles, snippets, and links.
+#     """
+#     # Debug print
+#     print("Searching google scholar for: ", query)
 
-    parsed_results = google_scholar_query(query)
+#     parsed_results = google_scholar_query(query)
 
-    if not parsed_results:
-        return "No research results were found for your query."
+#     if not parsed_results:
+#         return "No research results were found for your query."
 
-    # Format the results
-    formatted_results = []
-    for idx, item in enumerate(parsed_results, start=1):
-        title = item.get("title", "No title available")
-        snippet = item.get("snippet", "No snippet available")
-        link = item.get("link", "No link available")
-        formatted_results.append(
-            f"Result {idx}:\n"
-            f"Title: {title}\n"
-            f"Briefing: {snippet}\n"
-            f"Link: {link}\n"
-        )
+#     # Format the results
+#     formatted_results = []
+#     for idx, item in enumerate(parsed_results, start=1):
+#         title = item.get("title", "No title available")
+#         snippet = item.get("snippet", "No snippet available")
+#         link = item.get("link", "No link available")
+#         formatted_results.append(
+#             f"Result {idx}:\n"
+#             f"Title: {title}\n"
+#             f"Briefing: {snippet}\n"
+#             f"Link: {link}\n"
+#         )
 
-    return "\n".join(formatted_results)
+#     return "\n".join(formatted_results)
 
 # The role of this function is to save the added files in the 'added' folder1
 def save_uploaded_files(uploaded_files) -> str:
@@ -209,26 +220,26 @@ def save_uploaded_files(uploaded_files) -> str:
 
     return "\n".join(saved_files)
 
-def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365ef04b3e476a56d7bd5da888c"):
-    params = {
-    "engine": "google_scholar",
-    "q": query,
-    "api_key": api_key
-    }
-    search = GoogleSearch(params)
-    results = search.get_dict()
-    organic_results = results.get("organic_results", [])
-    parsed_results = [
-        {
-            "title": item.get("title", "No title available"),
-            "link": item.get("link", "No link available"),
-            "snippet": item.get("snippet", "No snippet available")
-        }
-        for item in organic_results
-    ]
-    if not parsed_results:
-        return "Error: the api key must have been depleted, or no search results were found"
-    return parsed_results
+# def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365ef04b3e476a56d7bd5da888c"):
+#     params = {
+#     "engine": "google_scholar",
+#     "q": query,
+#     "api_key": api_key
+#     }
+#     search = GoogleSearch(params)
+#     results = search.get_dict()
+#     organic_results = results.get("organic_results", [])
+#     parsed_results = [
+#         {
+#             "title": item.get("title", "No title available"),
+#             "link": item.get("link", "No link available"),
+#             "snippet": item.get("snippet", "No snippet available")
+#         }
+#         for item in organic_results
+#     ]
+#     if not parsed_results:
+#         return "Error: the api key must have been depleted, or no search results were found"
+#     return parsed_results
 
 def search_db_by_name(name):
 
@@ -259,3 +270,74 @@ def set_plot_type(plt_type):
 def get_plotted_figure():
     global plotted_figure
     return plotted_figure
+
+
+
+@tool
+def scrape(url : str)->str:
+    """
+    Webscrapes a URL to retrieve, clean all visible information and display them.
+
+    Args:
+        url (str): The URL of the website to scrape.
+
+    Returns:
+        str: Cleaned and extracted information from the webpage.
+    """
+    try:
+        content = scrape_url(url)
+        return content
+    except Exception as e:
+        return "The selected website couldn't be scraped."
+
+
+def scrape_url(url):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+
+    # Specify the path to the ChromeDriver executable
+    service = Service('chromedriver.exe')  # Replace with the actual path to your chromedriver
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get(url)
+    
+    # Wait for the page to load dynamically (you can adjust the condition based on specific elements)
+
+
+    # If dynamic content is involved, wait for it to be fully loaded
+    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'body')))  # Use a more specific selector
+
+    # Extract specific data using more advanced locators (ID, CSS selectors, XPath)
+    try:
+        body = driver.find_element(By.TAG_NAME, 'body')  # Adjust if needed to be more specific
+        scraped_content = body.text
+        content = clean_content(scraped_content)
+        return content
+    except Exception as e:
+        return e
+    
+
+def clean_content(content):
+    try:
+    # Remove HTML tags using BeautifulSoup
+        content = BeautifulSoup(content, "html.parser").get_text()
+
+    # Normalize Unicode (e.g., accent marks)
+        content = unicodedata.normalize('NFKD', content).encode('ASCII', 'ignore').decode('ASCII')
+
+    # Remove extra whitespace (leading, trailing, and multiple spaces)
+        content = re.sub(r'\s+', ' ', content).strip()
+
+    # Remove non-ASCII characters (optional, for certain cases)
+        content = re.sub(r'[^\x20-\x7E]', '', content)
+
+    # Remove email addresses, URLs, or other unwanted patterns
+        content = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '', content)  # Email
+        content = re.sub(r'http[s]?://\S+', '', content)  # URLs
+
+    # Additional custom cleaning rules can be added here, like removing stopwords, specific keywords, etc.
+        return content
+    except Exception:
+        return "The content of the url couldn't be cleaned."
+    
