@@ -284,6 +284,8 @@ def scrape(url : str)->str:
     Returns:
         str: Cleaned and extracted information from the webpage.
     """
+    # Debug print
+    print(f"Webscraping the url: {url}")
     try:
         content = scrape_url(url)
         return content

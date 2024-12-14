@@ -30,6 +30,14 @@ class GeminiChat:
         
         # Initialize conversation history
         self.messages = []
+        prompt_xml = None
+
+        # Load XML from a local file 
+        with open("../prompts.xml", "r", encoding="utf-8") as file:
+            prompt_xml = file.read()
+
+        # Prompting action happens here
+        self.messages.append(HumanMessage(prompt_xml))
         
     def send_message(self, message: str) -> str:
         """
