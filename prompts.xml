@@ -6,6 +6,7 @@
         <instructions>
             <bullet>Focus on key points.</bullet>
             <bullet>Keep the summary under 100 words.</bullet>
+            <bullet>In case of webscrapping, do NOT summarize.</bullet>
         </instructions>
     </task>
     <task id="2" type="question_answering">
