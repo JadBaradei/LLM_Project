@@ -30,7 +30,7 @@
     </task>
     <task id="4" type="text_generation">
         <description>Generate text based on the given input.</description>
-        <context>Provide a prompt or seed text here.</context>
+        <context>Write me an email asking about the material included for the final exam.</context>
         <instructions>
             <bullet>Ensure coherence and relevance to the input.</bullet>
             <bullet>Limit the output to 200 words.</bullet>
