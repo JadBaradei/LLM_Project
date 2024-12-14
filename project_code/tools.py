@@ -3,7 +3,7 @@ from langchain.tools import tool  # Decorator to create tools
 from langchain_google_genai import GoogleGenerativeAIEmbeddings  # Google's embeddings
 from langchain_chroma import Chroma  # Vector database
 from langchain_community.document_loaders import PyPDFLoader  # Loads and parses PDF files
-from get_key import get_api_key
+from get_key import get_api_key, get_serpapi_key
 from docx import Document as DocxDocument
 from langchain.schema import Document
 from serpapi import GoogleSearch
@@ -220,11 +220,11 @@ def save_uploaded_files(uploaded_files) -> str:
 
     return "\n".join(saved_files)
 
-def google_scholar_query(query,api_key="9b1904997abe4f6501079460c47f8159d6ea5365ef04b3e476a56d7bd5da888c"):
+def google_scholar_query(query):
     params = {
     "engine": "google_scholar",
     "q": query,
-    "api_key": api_key
+    "api_key": get_serpapi_key()
     }
     search = GoogleSearch(params)
     results = search.get_dict()
@@ -300,7 +300,8 @@ def scrape_url(url):
     chrome_options.add_argument("--no-sandbox")
 
     # Specify the path to the ChromeDriver executable
-    service = Service('chromedriver.exe')  # Replace with the actual path to your chromedriver
+    file_path = os.path.join(os.path.dirname(__file__), '../', 'chromedriver.exe')
+    service = Service(file_path)  # Replace with the actual path to your chromedriver
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.get(url)
     
@@ -343,3 +344,5 @@ def clean_content(content):
     except Exception:
         return "The content of the url couldn't be cleaned."
     
+
+print(scrape("https://ecotree.green/en/blog/what-is-a-tree"))

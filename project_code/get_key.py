@@ -2,6 +2,7 @@ import os
 
 # Global variable to store the API key
 _cached_api_key = None
+_cached_serpapi_key = None
 
 def get_api_key():
     """
@@ -20,3 +21,21 @@ def get_api_key():
         _cached_api_key = file.read()
 
     return _cached_api_key
+
+def get_serpapi_key():
+    """
+    Fetches and caches the SERPAPI key.
+    If the API key has already been loaded, returns the cached version.
+    If not, reads it from the file called api_key in the project and caches it.
+    """
+    global _cached_serpapi_key
+
+    if _cached_serpapi_key is not None:
+        return _cached_serpapi_key
+
+    file_path = os.path.join(os.path.dirname(__file__), '..', 'serp_api_key.txt')
+
+    with open(file_path, 'r') as file:
+        _cached_serpapi_key = file.read()
+
+    return _cached_serpapi_key
