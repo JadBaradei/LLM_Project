@@ -185,6 +185,54 @@ def search_google_scholar(query: str) -> str:
 
     return "\n".join(formatted_results)
 
+@tool
+def scrape(url : str)->str:
+    """
+    Webscrapes a URL to retrieve, clean all visible information and display them.
+
+    Args:
+        url (str): The URL of the website to scrape.
+
+    Returns:
+        str: Cleaned and extracted information from the webpage.
+    """
+    # Debug print
+    print(f"Webscraping the url: {url}")
+    try:
+        content = scrape_url(url)
+        return content
+    except Exception as e:
+        return "The selected website couldn't be scraped."
+
+
+def scrape_url(url):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--enable-unsafe-swiftshader") # for some websites
+    chrome_options.add_argument("--no-sandbox")
+
+    # Specify the path to the ChromeDriver executable
+    file_path = os.path.join(os.path.dirname(__file__), '../', 'chromedriver.exe')
+    service = Service(file_path)  # Replace with the actual path to your chromedriver
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get(url)
+    
+    # Wait for the page to load dynamically (you can adjust the condition based on specific elements)
+
+
+    # If dynamic content is involved, wait for it to be fully loaded
+    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'body')))  # Use a more specific selector
+
+    # Extract specific data using more advanced locators (ID, CSS selectors, XPath)
+    try:
+        body = driver.find_element(By.TAG_NAME, 'body')  # Adjust if needed to be more specific
+        scraped_content = body.text
+        content = clean_content(scraped_content)
+        return content
+    except Exception as e:
+        return e
+
 # The role of this function is to save the added files in the 'added' folder1
 def save_uploaded_files(uploaded_files) -> str:
     
@@ -270,56 +318,6 @@ def set_plot_type(plt_type):
 def get_plotted_figure():
     global plotted_figure
     return plotted_figure
-
-
-
-@tool
-def scrape(url : str)->str:
-    """
-    Webscrapes a URL to retrieve, clean all visible information and display them.
-
-    Args:
-        url (str): The URL of the website to scrape.
-
-    Returns:
-        str: Cleaned and extracted information from the webpage.
-    """
-    # Debug print
-    print(f"Webscraping the url: {url}")
-    try:
-        content = scrape_url(url)
-        return content
-    except Exception as e:
-        return "The selected website couldn't be scraped."
-
-
-def scrape_url(url):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--enable-unsafe-swiftshader") # for some websites
-    chrome_options.add_argument("--no-sandbox")
-
-    # Specify the path to the ChromeDriver executable
-    file_path = os.path.join(os.path.dirname(__file__), '../', 'chromedriver.exe')
-    service = Service(file_path)  # Replace with the actual path to your chromedriver
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.get(url)
-    
-    # Wait for the page to load dynamically (you can adjust the condition based on specific elements)
-
-
-    # If dynamic content is involved, wait for it to be fully loaded
-    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'body')))  # Use a more specific selector
-
-    # Extract specific data using more advanced locators (ID, CSS selectors, XPath)
-    try:
-        body = driver.find_element(By.TAG_NAME, 'body')  # Adjust if needed to be more specific
-        scraped_content = body.text
-        content = clean_content(scraped_content)
-        return content
-    except Exception as e:
-        return e
     
 
 def clean_content(content):
