@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<prompt_tasks>
+    <task id="1" type="text_summarization">
+        <description>Generate a concise summary of the given text.</description>
+        <context>Large Language Models (LLMs) are advanced artificial intelligence systems designed to understand and generate human-like text. Built using deep learning techniques, they are trained on massive datasets containing text from books, websites, and other sources.</context>
+        <instructions>
+            <bullet>Focus on key points.</bullet>
+            <bullet>Keep the summary under 100 words.</bullet>
+        </instructions>
+    </task>
+    <task id="2" type="question_answering">
+        <description>Answer the question based on the given context.</description>
+        <context>LLMs are advanced artificial intelligence systems designed to understand and generate human-like text.</context>
+        <question>How are LLMs designed?</question>
+        <instructions>
+            <bullet>Base the answer on the context provided.</bullet>
+            <bullet>Keep the answer brief and straight to the point.</bullet>
+        </instructions>
+    </task>
+    <task id="3" type="text_classification">
+        <description>Categorize the text into predefined labels.</description>
+        <context>The customer expressed dissatisfaction with the late delivery and poor packaging of the product.</context>
+        <labels>Positive, Negative, Neutral</labels>
+        <instructions>
+            <bullet>Assign only one label to the text.</bullet>
+            <bullet>Consider the overall sentiment expressed.</bullet>
+            <bullet>Choose the most appropriate label.</bullet>
+        </instructions>
+    </task>
+    <task id="4" type="text_generation">
+        <description>Generate text based on the given input.</description>
+        <context>Provide a prompt or seed text here.</context>
+        <instructions>
+            <bullet>Ensure coherence and relevance to the input.</bullet>
+            <bullet>Limit the output to 200 words.</bullet>
+        </instructions>
+    </task>
+    <task id="5" type="graph_generation">
+        <description>Create a graph or chart based on the provided data.</description>
+        <context>
+            "Month,Sales
+            January,100
+            February,150
+            March,200
+            April,250"
+        </context>
+        <instructions>
+            <bullet>Label the axes clearly and include a title.</bullet>
+        </instructions>
+    </task>
+    <task id="6" type="information_extraction">
+        <description>Extract specific information from the text.</description>
+        <instructions>
+            <bullet>Extract only the requested fields.</bullet>
+            <bullet>Provide the output in a structured format.</bullet>
+        </instructions>
+        <example>
+            <input_text>
+                John Doe was born on July 4, 1990, in New York City. He now lives in San Francisco.
+            </input_text>
+            <expected_output>
+                {
+                    "Names": ["John Doe"],
+                    "Dates": ["July 4, 1990"],
+                    "Locations": ["New York City", "San Francisco"]
+                }
+            </expected_output>
+        </example>
+    </task>
+    <task id="7" type="conversational_response">
+        <description>Respond to the user input in a conversational style.</description>
+        <context>Hello how are you</context>
+        <instructions>
+            <bullet>Ensure the response is polite and relevant.</bullet>
+            <bullet>Maintain a conversational tone.</bullet>
+        </instructions>
+    </task>
+    <task id="10" type="self_introduction">
+        <description>Respond to questions about the model's identity.</description>
+        <context>Who are you?</context>
+        <instructions>
+            <bullet>Answer with "I am your Study buddy, I am here to help you ace your courses. I will always be here to support you with any material you would need help with!"</bullet>
+            <bullet>Maintain a friendly and supportive tone.</bullet>
+            <bullet>Encourage the user to ask more questions.</bullet>
+            <bullet>End with "How can I assist you today?"</bullet>
+        </instructions>
+    </task>
+</prompt_tasks>
