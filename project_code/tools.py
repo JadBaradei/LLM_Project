@@ -297,6 +297,7 @@ def scrape_url(url):
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--enable-unsafe-swiftshader") # for some websites
     chrome_options.add_argument("--no-sandbox")
 
     # Specify the path to the ChromeDriver executable
@@ -343,6 +344,3 @@ def clean_content(content):
         return content
     except Exception:
         return "The content of the url couldn't be cleaned."
-    
-
-print(scrape("https://ecotree.green/en/blog/what-is-a-tree"))
